@@ -14,13 +14,13 @@
 3. Prerequisites & Environment Setup
 4. Network Deployment
 5. Smart Contracts
-6. Testing Guide
+6. Testing & Load Simulation Guide
 7. Node Onboarding Runbook
 8. Monitoring & Observability
 9. Operational Procedures
 10. Port Reference
 11. Troubleshooting
-12. AWS Deployment (Week 3)
+12. AWS Deployment & Hardening (Week 3 & 4)
 
 ---
 
@@ -81,10 +81,10 @@ Exception states: `ON_HOLD` (compliance review), `FROZEN` (sanctions hit)
 │  │ RPC: 8551   │  │             │  │ RPC: 8553   │    │
 │  └─────────────┘  └─────────────┘  └─────────────┘    │
 │                                                         │
-│  ┌─────────────┐  ┌─────────────┐                      │
-│  │ Prometheus  │  │  Grafana    │                      │
-│  │ Port: 9090  │  │ Port: 3000  │                      │
-│  └─────────────┘  └─────────────┘                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │ Prometheus  │  │  Grafana    │  │ Lite Expl.  │    │
+│  │ Port: 9090  │  │ Port: 3000  │  │ Port: 8080  │    │
+│  └─────────────┘  └─────────────┘  └─────────────┘    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -461,6 +461,20 @@ npm test
 
 This runs the Hardhat test suite in `test/VittaGemsSettlement.test.js` against a local Hardhat network (not the Quorum network). Useful for rapid contract development without waiting for Quorum's 5-second block time.
 
+### Test 4: Load Testing (MVP Readiness)
+
+To ensure the network can handle high transaction volumes (e.g., for AWS deployment):
+
+```bash
+npx hardhat run scripts/load-test.js --network quorum_local
+# Or for AWS: npx hardhat run scripts/load-test.js --network quorum_aws
+```
+
+**What it tests:**
+- Sends batches of zero-value, zero-gas transactions in parallel.
+- Simulates high-throughput settlement activity.
+- Calculates and reports the overall Transactions Per Second (TPS).
+
 ---
 
 ## 7. Node Onboarding Runbook
@@ -727,6 +741,7 @@ console.log(s);
 | RPC 2 | 8553 | 8554 | 30307 | 9549 |
 | Prometheus | 9090 | - | - | - |
 | Grafana | 3000 | - | - | - |
+| Lite Explorer | 8080 | - | - | - |
 
 ### Hardhat Network Aliases
 
@@ -822,35 +837,43 @@ docker restart vittagems-prometheus
 
 ---
 
-## 12. AWS Deployment (Week 3)
+## 12. AWS Deployment & Hardening (Week 3 & 4)
 
-### Minimum Spec (Dev/Testing)
+### Minimum Spec (Dev/Testing/MVP)
 
-For initial testing with low transaction volume, everything runs on a single instance:
+For initial testing with low transaction volume, everything runs on a single instance using `deploy-to-aws.sh`:
 
 | Config | Value |
 |---|---|
 | Instance | t3.large (2 vCPU, 8 GB RAM) |
 | Storage | 100 GB gp3 EBS |
-| OS | Ubuntu 22.04 LTS |
+| OS | Ubuntu 22.04 / 24.04 LTS |
 | Elastic IP | Yes (fixed endpoint) |
 
 **Security Group:**
 - TCP 22 from office/VPN IP (SSH)
-- TCP 8545 from application servers (JSON-RPC API)
+- TCP 8545 & 8551 from application servers (JSON-RPC API)
 - TCP 3000 from office/VPN IP (Grafana)
+- TCP 8080 from office/VPN IP (Ethereum Lite Explorer)
 
-**Deployment is identical to local:**
+**Automated Deployment from Local:**
+We have automated the deployment to your AWS instance using the `deploy-to-aws.sh` script:
 ```bash
-ssh ubuntu@<elastic-ip>
-# Install prerequisites (same env setup script)
-# Clone repo, npm install
-# Run deploy-network.sh --reset
+bash scripts/deploy-to-aws.sh <your-elastic-ip> ~/.ssh/your-key.pem ubuntu
 ```
+This script will `rsync` the project, setup the environment, and run `deploy-network.sh --reset --aws-cloudwatch` remotely.
+
+**CloudWatch Logging:**
+By deploying with `--aws-cloudwatch`, Docker routes all container logs directly to AWS CloudWatch under the log group `/vittagems/quorum`.
 
 ### Production Spec (Multi-Instance)
 
 For production with fault tolerance across availability zones, see the full AWS architecture spec in the project documentation. Key difference: each validator runs on its own EC2 instance in a private subnet, RPC nodes sit behind an Application Load Balancer with TLS, and node keys are stored in AWS Secrets Manager.
+
+### External Documentation
+
+- **Disaster Recovery Runbook:** See `docs/DR_RUNBOOK.md` for procedures on handling node failures, EC2 crashes, and chain data corruption.
+- **API Integration:** See `docs/API_INTEGRATION.md` for a guide on how the Phase 2 backend team can connect Ethers.js to the Quorum RPC endpoints.
 
 ---
 
@@ -867,6 +890,8 @@ vittagems-blockchain/
 │   ├── deploy/
 │   │   ├── deploy-settlement.js        # Deploy settlement contract
 │   │   └── deploy-permissioning.js     # Deploy permissioning contracts
+│   ├── deploy-to-aws.sh                # Automated AWS EC2 deployment
+│   ├── load-test.js                    # High-volume TPS simulation
 │   ├── test-lifecycle.js               # Full settlement lifecycle test
 │   ├── test-permissioning.js           # Permissioning integration test
 │   ├── test-validator-failover.sh      # IBFT consensus resilience test
@@ -897,8 +922,13 @@ vittagems-blockchain/
 ├── test/
 │   └── VittaGemsSettlement.test.js    # Hardhat unit tests
 ├── docs/
-│   └── ARCHITECTURE.md                # Architecture document
+│   ├── ARCHITECTURE.md                # Architecture document
+│   ├── API_INTEGRATION.md             # Integration guide for backend
+│   ├── COMMAND_HANDBOOK.md            # Cheat sheet for all commands and execution order
+│   ├── DR_RUNBOOK.md                  # Disaster Recovery Runbook
+│   └── TECHNICAL_DOCS.md              # This document
 ├── deploy-network.sh                  # Parameterized network deployment
+├── vittagems-env-setup.sh             # Environment prerequisites setup
 ├── hardhat.config.js                  # Hardhat configuration (auto-updated by deploy script)
 ├── package.json                       # Node.js dependencies + npm scripts
 └── .env                               # Environment variables

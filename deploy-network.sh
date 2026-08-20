@@ -54,6 +54,7 @@ MONITORING=true
 AUTO_START=true
 RESET=false
 VERBOSE=false
+AWS_CLOUDWATCH=false
 
 QUORUM_IMAGE="quorumengineering/quorum:latest"
 
@@ -97,6 +98,7 @@ while [[ $# -gt 0 ]]; do
         --no-start)         AUTO_START=false; shift ;;
         --reset)            RESET=true; shift ;;
         --verbose)          VERBOSE=true; shift ;;
+        --aws-cloudwatch)   AWS_CLOUDWATCH=true; shift ;;
         --help|-h)          show_help ;;
         *) print_error "Unknown option: $1"; echo "Use --help for usage."; exit 1 ;;
     esac
@@ -412,6 +414,23 @@ P2P_PORT=$BASE_P2P_PORT
 METRICS_PORT=$BASE_METRICS_PORT
 
 # Start composing
+if [ "$AWS_CLOUDWATCH" = true ]; then
+cat > "${DOCKER_DIR}/docker-compose.yml" << 'HEADER'
+x-quorum-defaults: &quorum-defaults
+  image: quorumengineering/quorum:latest
+  restart: unless-stopped
+  logging:
+    driver: awslogs
+    options:
+      awslogs-region: us-east-1
+      awslogs-group: /vittagems/quorum
+      awslogs-create-group: "true"
+
+x-quorum-env: &quorum-env
+  PRIVATE_CONFIG: ignore
+
+HEADER
+else
 cat > "${DOCKER_DIR}/docker-compose.yml" << 'HEADER'
 x-quorum-defaults: &quorum-defaults
   image: quorumengineering/quorum:latest
@@ -421,6 +440,7 @@ x-quorum-env: &quorum-env
   PRIVATE_CONFIG: ignore
 
 HEADER
+fi
 
 # Network section
 cat >> "${DOCKER_DIR}/docker-compose.yml" << NETWORK
@@ -637,6 +657,7 @@ BOOTNODE
 if [ "$MONITORING" = true ]; then
     PROM_IP="${SUBNET_PREFIX}.${IP_COUNTER}"; IP_COUNTER=$((IP_COUNTER + 1))
     GRAF_IP="${SUBNET_PREFIX}.${IP_COUNTER}"; IP_COUNTER=$((IP_COUNTER + 1))
+    EXPLORER_IP="${SUBNET_PREFIX}.${IP_COUNTER}"; IP_COUNTER=$((IP_COUNTER + 1))
 
     cat >> "${DOCKER_DIR}/docker-compose.yml" << MONITORING_SERVICES
 
@@ -672,6 +693,18 @@ if [ "$MONITORING" = true ]; then
     networks:
       ${NETWORK_NAME}-net:
         ipv4_address: ${GRAF_IP}
+
+  explorer:
+    image: alethio/ethereum-lite-explorer:latest
+    container_name: ${NETWORK_NAME}-explorer
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - APP_NODE_URL=http://localhost:8545
+    networks:
+      ${NETWORK_NAME}-net:
+        ipv4_address: ${EXPLORER_IP}
 MONITORING_SERVICES
 
     # Generate Prometheus config
@@ -793,7 +826,7 @@ for val in "${VALIDATOR_NODES[@]}"; do
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0x${VAL1_KEY}"],
+      accounts: [process.env.PRIVATE_KEY || "0x${VAL1_KEY}"],
     },
 VALNET
 done
@@ -809,7 +842,7 @@ for rpc in "${RPC_NODES_LIST[@]}"; do
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0x${VAL1_KEY}"],
+      accounts: [process.env.PRIVATE_KEY || "0x${VAL1_KEY}"],
     },
 RPCNET
 done
@@ -822,7 +855,7 @@ cat >> "${PROJECT_DIR}/hardhat.config.js" << LOCALNET
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0x${VAL1_KEY}"],
+      accounts: [process.env.PRIVATE_KEY || "0x${VAL1_KEY}"],
     },
   },
 };
@@ -915,6 +948,7 @@ if [ "$MONITORING" = true ]; then
 echo "║  Monitoring:                                             ║"
 echo "║    Grafana:    http://localhost:3000  (admin/${NETWORK_NAME})     ║"
 echo "║    Prometheus: http://localhost:9090                      ║"
+echo "║    Explorer:   http://localhost:8080                      ║"
 echo "║                                                          ║"
 fi
 

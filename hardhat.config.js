@@ -15,7 +15,7 @@ module.exports = {
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
+      accounts: [process.env.PRIVATE_KEY || "0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
     },
     quorum_validator2: {
       url: "http://localhost:8547",
@@ -23,7 +23,7 @@ module.exports = {
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
+      accounts: [process.env.PRIVATE_KEY || "0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
     },
     quorum_validator3: {
       url: "http://localhost:8549",
@@ -31,7 +31,7 @@ module.exports = {
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
+      accounts: [process.env.PRIVATE_KEY || "0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
     },
     quorum_rpc1: {
       url: "http://localhost:8551",
@@ -39,7 +39,7 @@ module.exports = {
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
+      accounts: [process.env.PRIVATE_KEY || "0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
     },
     quorum_rpc2: {
       url: "http://localhost:8553",
@@ -47,7 +47,7 @@ module.exports = {
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
+      accounts: [process.env.PRIVATE_KEY || "0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
     },
     quorum_local: {
       url: "http://localhost:8545",
@@ -55,7 +55,7 @@ module.exports = {
       gasPrice: 0,
       gas: 8000000,
       hardfork: "istanbul",
-      accounts: ["0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
+      accounts: [process.env.PRIVATE_KEY || "0xaf943b9cb2a1a0f0598143aa712af960e0bdfba39cfbc23ff4b50dbc7a684acc"],
     },
   },
 };
