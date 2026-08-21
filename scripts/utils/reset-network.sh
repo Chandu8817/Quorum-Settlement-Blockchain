@@ -17,11 +17,12 @@ echo "  Stopping containers..."
 cd "${PROJECT_DIR}/docker" && docker compose down -v 2>/dev/null
 
 echo "  Removing chain data..."
-for node in validator1 validator2 validator3 rpc1 rpc2 bootnode; do
-  rm -rf "${PROJECT_DIR}/network/${node}/data/geth"
-  rm -rf "${PROJECT_DIR}/network/${node}/data/quorum-raft-state"
-  rm -rf "${PROJECT_DIR}/network/${node}/logs/*"
-  echo "    Cleaned: ${node}"
+for data_dir in "${PROJECT_DIR}"/network/*/data; do
+  rm -rf "${data_dir}/geth"
+  rm -rf "${data_dir}/quorum-raft-state"
+  rm -rf "${data_dir}/../logs/"*
+  node_name=$(basename "$(dirname "$data_dir")")
+  echo "    Cleaned: ${node_name}"
 done
 
 echo ""
