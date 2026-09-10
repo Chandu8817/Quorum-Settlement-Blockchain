@@ -1,9 +1,10 @@
 [profile.default]
 src = "contracts"
 out = "out"
-libs = ["node_modules", "lib"]
+libs = ["node_modules"]
 remappings = [
-    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/"
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "forge-std/=node_modules/forge-std/src/"
 ]
 
 [profile.quorum_local]
