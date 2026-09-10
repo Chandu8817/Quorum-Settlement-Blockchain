@@ -13,7 +13,9 @@
     "network:reset": "bash scripts/utils/reset-network.sh",
     "network:logs": "cd docker && docker compose logs -f --tail=50"
   },
-  "dependencies": {},
+  "dependencies": {
+    "foundry": "^4.7.0"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts": "^5.0.0",

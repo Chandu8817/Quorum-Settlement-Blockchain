@@ -42,3 +42,10 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Foundry
+lib/
+out/
+broadcast/
+.gas-snapshot
+foundry_bin/

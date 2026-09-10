@@ -932,4 +932,34 @@ vittagems-blockchain/
 ├── hardhat.config.js                  # Hardhat configuration (auto-updated by deploy script)
 ├── package.json                       # Node.js dependencies + npm scripts
 └── .env                               # Environment variables
-```
+```---
+
+## 13. V2 Architecture (DAO Governance & Foundry)
+
+The Settlement Layer has been upgraded to a **DAO-Governed** V2 architecture, managed via the Foundry toolchain.
+All new smart contracts are located in contracts/, and the legacy V1 contracts have been safely moved to contracts/v1_contracts/.
+
+### V2 Deployment Workflow
+
+Deploying V2 uses the new Foundry script: script/DeployV2.s.sol.
+
+**Pre-requisites:**
+1. Ensure Foundry (orge) is installed.
+2. Set up your .env file with PRIVATE_KEY, QUORUM_THRESHOLD (e.g. 3), and VOTING_PERIOD (e.g. 86400).
+
+**Execution:**
+`ash
+forge script script/DeployV2.s.sol:DeployV2 --rpc-url http://localhost:8545 --broadcast
+`
+
+### Initial DAO Bootstrap
+
+After the DeployV2 script completes, the deployer is the ONLY address with DEFAULT_ADMIN_ROLE on the Governor.
+To onboard the initial set of authorized DAO Members (who will vote on Mints and Burns):
+`ash
+cast send <GOVERNOR_ADDRESS> "grantRole(bytes32,address)" \
+    0xf29a78c020ddf311f61483cfe182d6d833b80b74c6044ef77e24d033c4266a4c <MEMBER_ADDRESS> \
+    --rpc-url http://localhost:8545 --private-key <DEPLOYER_KEY>
+`
+
+Once the initial DAO members are bootstrapped, the deployment is fully ready for Production.
