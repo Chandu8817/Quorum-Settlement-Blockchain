@@ -7,6 +7,8 @@
     "test": "npx hardhat test",
     "deploy:local": "npx hardhat run scripts/deploy/deploy-settlement.js --network quorum_local",
     "deploy:rpc1": "npx hardhat run scripts/deploy/deploy-settlement.js --network quorum_rpc1",
+    "deploy:v2": "forge script script/DeployV2.s.sol:DeployV2 --rpc-url http://localhost:8545 --broadcast",
+    "test:v2": "forge test",
     "network:start": "cd docker && docker compose up -d",
     "network:stop": "cd docker && docker compose down",
     "network:status": "bash scripts/utils/network-status.sh",
@@ -16,11 +18,14 @@
     "permissioning:bootstrap": "npx hardhat run scripts/permissioning/bootstrap-permissioning.js --network quorum_local",
     "permissioning:verify": "npx hardhat run scripts/permissioning/verify-permissioning.js --network quorum_local"
   },
-  "dependencies": {},
+  "dependencies": {
+    "foundry": "^4.7.0"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts": "^5.0.0",
     "ethers": "^6.9.0",
+    "forge-std": "github:foundry-rs/forge-std",
     "hardhat": "^2.19.0"
   }
 }
