@@ -22,6 +22,8 @@ config/static-nodes.json
 config/permissioned-nodes.json
 config/network-info.json
 config/node-keys.json
+config/permission-config.json
+config/operational-accounts.json
 
 # Hardhat
 cache/
@@ -30,6 +32,7 @@ typechain-types/
 
 # Deployments (keep structure, ignore data)
 deployments/*.json
+deployments/*.log
 
 # Docker volumes
 docker/data/

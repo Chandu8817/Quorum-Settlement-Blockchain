@@ -223,14 +223,14 @@ for node in "${ALL_NODES[@]}"; do
     rm -f "${NETWORK_DIR}/${node}/data/nodekey"
 
     # Generate using bootnode inside the Quorum image
-    docker run --rm \
+    docker run --rm --user "$(id -u):$(id -g)" \
         --entrypoint="" \
         -v "${NETWORK_DIR}/${node}/data:/data" \
         "$QUORUM_IMAGE" \
         bootnode --genkey=/data/nodekey 2>/dev/null
 
     # Extract public key
-    PUBKEY=$(docker run --rm \
+    PUBKEY=$(docker run --rm --user "$(id -u):$(id -g)" \
         --entrypoint="" \
         -v "${NETWORK_DIR}/${node}/data:/data" \
         "$QUORUM_IMAGE" \
@@ -252,7 +252,7 @@ print_step "Deriving validator addresses"
 declare -A NODE_ADDRESSES
 
 for val in "${VALIDATOR_NODES[@]}"; do
-    ADDRESS=$(docker run --rm \
+    ADDRESS=$(docker run --rm --user "$(id -u):$(id -g)" \
         --entrypoint="" \
         -v "${NETWORK_DIR}/${val}/data:/data" \
         "$QUORUM_IMAGE" \
@@ -347,13 +347,14 @@ ${ALLOC_JSON}
     "constantinopleBlock": 0,
     "petersburgBlock": 0,
     "istanbulBlock": 0,
+    "qip714Block": 0,
     "istanbul": {
       "epoch": 30000,
       "policy": 0,
       "ceil2Nby3Block": 0
     },
     "txnSizeLimit": 64,
-    "maxCodeSize": 0,
+    "maxCodeSizeConfig": [{ "block": 0, "size": 35 }],
     "isQuorum": true
   }
 }
@@ -383,8 +384,15 @@ for node in "${ALL_NODES[@]}"; do
     cp "${CONFIG_DIR}/genesis.json" "${NETWORK_DIR}/${node}/data/"
     cp "${CONFIG_DIR}/static-nodes.json" "${NETWORK_DIR}/${node}/data/"
     cp "${CONFIG_DIR}/permissioned-nodes.json" "${NETWORK_DIR}/${node}/data/"
+    # Enhanced (v2) permissioning: if a permission-config.json has already been
+    # produced by scripts/permissioning/bootstrap-permissioning.js, seed it so
+    # the node comes up with account-level permissioning active. On a first,
+    # pre-bootstrap deploy this file does not exist yet and is added later.
+    if [ -f "${CONFIG_DIR}/permission-config.json" ]; then
+        cp "${CONFIG_DIR}/permission-config.json" "${NETWORK_DIR}/${node}/data/"
+    fi
 
-    docker run --rm \
+    docker run --rm --user "$(id -u):$(id -g)" \
         --entrypoint="" \
         -v "${NETWORK_DIR}/${node}/data:/data" \
         "$QUORUM_IMAGE" \
@@ -508,6 +516,7 @@ DEP
           --datadir /data \\
           --networkid ${NETWORK_ID} \\
           --nodiscover \\
+          --permissioned \\
           --verbosity 3 \\
           --syncmode full \\
           --istanbul.blockperiod ${BLOCK_PERIOD} \\
@@ -519,12 +528,12 @@ DEP
           --http.port 8545 \\
           --http.corsdomain "*" \\
           --http.vhosts "*" \\
-          --http.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul \\
+          --http.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumPermission \\
           --ws \\
           --ws.addr 0.0.0.0 \\
           --ws.port 8546 \\
           --ws.origins "*" \\
-          --ws.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul \\
+          --ws.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumPermission \\
           --port 30303 \\
           --allow-insecure-unlock \\
           --metrics \\
@@ -583,6 +592,7 @@ $(echo -e "$DEPENDS_LIST")
           --datadir /data \\
           --networkid ${NETWORK_ID} \\
           --nodiscover \\
+          --permissioned \\
           --verbosity 3 \\
           --syncmode full \\
           --miner.gasprice 0 \\
@@ -591,12 +601,12 @@ $(echo -e "$DEPENDS_LIST")
           --http.port 8545 \\
           --http.corsdomain "*" \\
           --http.vhosts "*" \\
-          --http.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul \\
+          --http.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumPermission \\
           --ws \\
           --ws.addr 0.0.0.0 \\
           --ws.port 8546 \\
           --ws.origins "*" \\
-          --ws.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul \\
+          --ws.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumPermission \\
           --port 30303 \\
           --allow-insecure-unlock \\
           --metrics \\
@@ -637,6 +647,7 @@ cat >> "${DOCKER_DIR}/docker-compose.yml" << BOOTNODE
           --datadir /data \\
           --networkid ${NETWORK_ID} \\
           --nodiscover \\
+          --permissioned \\
           --verbosity 3 \\
           --syncmode full \\
           --miner.gasprice 0 \\
@@ -645,7 +656,7 @@ cat >> "${DOCKER_DIR}/docker-compose.yml" << BOOTNODE
           --http.port 8545 \\
           --http.corsdomain "*" \\
           --http.vhosts "*" \\
-          --http.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul \\
+          --http.api admin,eth,debug,miner,net,txpool,personal,web3,istanbul,quorumPermission \\
           --port 30303 \\
           --allow-insecure-unlock \\
         2>&1 | tee /logs/bootnode.log
@@ -806,11 +817,23 @@ require("@nomicfoundation/hardhat-toolbox");
 
 module.exports = {
   solidity: {
-    version: "0.8.20",
-    settings: {
-      optimizer: { enabled: true, runs: 200 },
-      evmVersion: "istanbul"
-    },
+    compilers: [
+      {
+        version: "0.8.20",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+          evmVersion: "istanbul",
+        },
+      },
+      {
+        // GoQuorum enhanced (v2) permissioning contract suite — pragma ^0.5.3
+        version: "0.5.17",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+          evmVersion: "istanbul",
+        },
+      },
+    ],
   },
   networks: {
 HARDHAT

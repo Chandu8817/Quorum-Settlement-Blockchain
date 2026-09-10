@@ -52,8 +52,26 @@ Run `bash vittagems-env-setup.sh` to install everything.
 |----------|---------|
 | VittaGemsSettlement | Mint, transfer, burn, hold, freeze, reconcile |
 | VittaGemsRBAC | Role-based access (Treasury, Compliance, Agent, Auditor, Partner) |
-| VittaGemsNodePermissioning | On-chain node allowlist |
-| VittaGemsAccountPermissioning | On-chain account allowlist |
+| `contracts/permissioning/quorum/*` | GoQuorum enhanced (v2) permissioning suite — **the enforcing layer** |
+| VittaGemsNodePermissioning / …Account… | Legacy Besu-style contracts, retained for reference, **not enforced** (see below) |
+
+## Permissioning
+
+The chain enforces **GoQuorum enhanced (v2) permissioning**: unknown accounts
+cannot transact, unapproved nodes cannot join. See
+[`docs/ENHANCED_PERMISSIONING.md`](docs/ENHANCED_PERMISSIONING.md).
+
+```bash
+# rebuild the chain with permissioning active (DESTRUCTIVE: wipes chain data)
+bash scripts/permissioning/rebuild-with-permissioning.sh
+
+# prove enforcement
+npx hardhat run scripts/permissioning/verify-permissioning.js --network quorum_local
+```
+
+The two `VittaGems*Permissioning.sol` contracts and
+`scripts/deploy/deploy-permissioning.js` are kept for reference only — GoQuorum
+never calls their Besu-style `transactionAllowed(...)` interface.
 
 ## Commands
 

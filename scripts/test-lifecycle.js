@@ -42,11 +42,25 @@ async function main() {
   const [deployer] = await hre.ethers.getSigners();
   info(`Deployer/Treasury: ${deployer.address}`);
 
-  const complianceWallet = hre.ethers.Wallet.createRandom().connect(hre.ethers.provider);
-  const settlementAgentWallet = hre.ethers.Wallet.createRandom().connect(hre.ethers.provider);
-  const auditorWallet = hre.ethers.Wallet.createRandom().connect(hre.ethers.provider);
-  const partner1Wallet = hre.ethers.Wallet.createRandom().connect(hre.ethers.provider);
-  const partner2Wallet = hre.ethers.Wallet.createRandom().connect(hre.ethers.provider);
+  // Enhanced (v2) permissioning is active: an account must be known to the
+  // permissioning contracts before it can transact, so we use the FIXED dev
+  // keys from config/operational-accounts.json (all seeded as NWADMIN by the
+  // permissioning bootstrap) rather than fresh random wallets.
+  const opAccountsPath = "./config/operational-accounts.json";
+  if (!fs.existsSync(opAccountsPath)) {
+    console.error("  ✗ config/operational-accounts.json missing — run:");
+    console.error("      node scripts/permissioning/gen-operational-accounts.js");
+    process.exit(1);
+  }
+  const opAccounts = JSON.parse(fs.readFileSync(opAccountsPath, "utf8")).accounts;
+  const wallet = (name) =>
+    new hre.ethers.Wallet(opAccounts[name].privateKey, hre.ethers.provider);
+
+  const complianceWallet = wallet("complianceOperator");
+  const settlementAgentWallet = wallet("settlementAgent");
+  const auditorWallet = wallet("auditor");
+  const partner1Wallet = wallet("partner1");
+  const partner2Wallet = wallet("partner2");
 
   info(`Compliance Operator: ${complianceWallet.address}`);
   info(`Settlement Agent: ${settlementAgentWallet.address}`);
