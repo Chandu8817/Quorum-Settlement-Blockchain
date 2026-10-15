@@ -52,3 +52,15 @@ out/
 broadcast/
 .gas-snapshot
 foundry_bin/
+
+# Blockchain runtime data
+network/bootnode/data/
+network/**/geth.ipc
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
